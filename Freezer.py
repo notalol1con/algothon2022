@@ -43,9 +43,9 @@ def getMyPosition (prcSoFar):
 
         # setting trade criteria
         if prc_series["EWMA"].iloc[-1] + shift  <= close_prc:
-            currentPos[i] += round(8500 / close_prc)
-        elif prc_series["EWMA"].iloc[-1] - shift  >= close_prc:
             currentPos[i] -= round(8500 / close_prc)
+        elif prc_series["EWMA"].iloc[-1] - shift  >= close_prc:
+            currentPos[i] += round(8500 / close_prc)
 
 
     return currentPos
