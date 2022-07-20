@@ -5,9 +5,11 @@ import numpy as np
 
 nInst=100
 currentPos = np.zeros(nInst)
+counter = 0
 
 def getMyPosition (prcSoFar):
     global currentPos
+    global counter
     
     for i in range(len(prcSoFar)):
         close_prc = prcSoFar[i][-1]
@@ -42,10 +44,12 @@ def getMyPosition (prcSoFar):
         shift = avg_prc*std_multiple
 
         # setting trade criteria
-        if prc_series["EWMA"].iloc[-1] + shift  <= close_prc:
+        if prc_series["EWMA"].iloc[-1] + shift  < close_prc:
             currentPos[i] -= round(8500 / close_prc)
+            counter += 1
         elif prc_series["EWMA"].iloc[-1] - shift  >= close_prc:
             currentPos[i] += round(8500 / close_prc)
+            counter += 1
 
-
+    print(counter)
     return currentPos
