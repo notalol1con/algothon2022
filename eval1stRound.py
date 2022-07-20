@@ -20,7 +20,7 @@ def loadPrices(fn):
     nt, nInst = df.values.shape
     return (df.values).T
 
-pricesFile="./prices.txt"
+pricesFile="./prc500.txt"
 prcAll = loadPrices(pricesFile)
 print ("Loaded %d instruments for %d days" % (nInst, nt))
 
@@ -37,7 +37,7 @@ def calcPL(prcHist):
     todayPLL = []
     (_,nt) = prcHist.shape
     tNow = time.time()
-    for t in range(1,nt+1): 
+    for t in range(1,nt+1): #range(1,nt+1): 
         prcHistSoFar = prcHist[:,:t]
         # no trades on the very last price update, only before the last update
         newPosOrig = curPos
