@@ -44,12 +44,11 @@ def getMyPosition (prcSoFar):
         shift = avg_prc*std_multiple
 
         # setting trade criteria
-        if prc_series["EWMA"].iloc[-1] + shift  < close_prc:
+        if prc_series["EWMA"].iloc[-1] + shift  <= close_prc:
             currentPos[i] -= round(8500 / close_prc)
-            counter += 1
+            
         elif prc_series["EWMA"].iloc[-1] - shift  >= close_prc:
             currentPos[i] += round(8500 / close_prc)
-            counter += 1
 
-    print(counter)
+
     return currentPos
