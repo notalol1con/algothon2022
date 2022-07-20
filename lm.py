@@ -51,6 +51,8 @@ def getMyPosition (prcSoFar):
     # setting trade criteria
     for i in range(len(prcSoFar)):
         close_prc = prcSoFar[i][-1]
+        avg_change = prcPct[i].pct_change().mean()
+        std_change = np.std(prcPct[i].pct_change())
         if len(prcSoFar[0]) <= 31:
             curEWMA, curShift = EWMAs[-1][i]
             if curEWMA + curShift  <= close_prc:
@@ -58,16 +60,36 @@ def getMyPosition (prcSoFar):
             elif curEWMA - curShift  >= close_prc:
                 currentPos[i] += round(8500 / close_prc)
             continue
-        curStockPos = 0
+        curStockPos, weightedPct = 0, 0
         currentTotal, changes = giveCorrelatedChanges(prcPct, i)
+        if len(changes) == 0:
+            curEWMA, curShift = EWMAs[-1][i]
+            if curEWMA + curShift  <= close_prc:
+                currentPos[i] -= round(8500 / close_prc)
+            elif curEWMA - curShift  >= close_prc:
+                currentPos[i] += round(8500 / close_prc)
+            continue
         for change in changes:
             curCorr, leadShift, curStock = change
-            curEWMA, curShift = EWMAs[-leadShift-1][curStock]
-            if curEWMA + curShift  <= prcSoFar[curStock][-leadShift-1]:
-                curStockPos -= round(8500 / close_prc * curCorr/currentTotal)
-            elif curEWMA - curShift  >= prcSoFar[curStock][-leadShift-1]:
-                curStockPos += round(8500 / close_prc * curCorr/currentTotal)
-        currentPos[i] += curStockPos
+            curEWMA, curShift = EWMAs[-leadShift][curStock]
+            pctChange = (prcSoFar[curStock][-leadShift] - prcSoFar[curStock][-leadShift-1])/prcSoFar[curStock][-leadShift-1]
+            weightedPct += curCorr/currentTotal * pctChange
+            # if curEWMA + curShift  <= prcSoFar[curStock][-leadShift]:
+            #     curStockPos -= round(8500 / close_prc * curCorr/currentTotal)
+            # elif curEWMA - curShift  >= prcSoFar[curStock][-leadShift]:
+            #     curStockPos += round(8500 / close_prc * curCorr/currentTotal)
+        if abs(weightedPct) < abs(avg_change) + 2*std_change:
+            curEWMA, curShift = EWMAs[-1][i]
+            if curEWMA + curShift  <= close_prc:
+                currentPos[i] -= round(8500 / close_prc)
+            elif curEWMA - curShift  >= close_prc:
+                currentPos[i] += round(8500 / close_prc)
+            continue
+        elif weightedPct > abs(avg_change) + 2*std_change:
+            currentPos[i] += round(9500 / close_prc)
+        elif weightedPct < -abs(avg_change) - 2*std_change:
+            currentPos[i] -= round(9500 / close_prc)
+        # currentPos[i] += curStockPos
 
     return currentPos
 
@@ -75,24 +97,25 @@ def getMyPosition (prcSoFar):
 def giveCorrelatedChanges(prcPct, stockName):
     numStocks = 100
     backtrackDays = 30
-    leaderDays = 1
+    leaderDays = 9
     currentTotal = 0
     curStock = prcPct[stockName]
     curStock = curStock.iloc[-backtrackDays:]
     changes = []
     for i in range(numStocks):
         if i == stockName:
-            changes.append((1,0, i))
-            currentTotal += 1
+            # changes.append((1,1, i))
+            # currentTotal += 1
+            continue
         bestCorr = 0
         shift = None
-        for j in range(0,leaderDays,2):
+        for j in range(3,leaderDays,3):
             curComp = prcPct[i].shift(j).iloc[-backtrackDays:]
             curCorr = curStock.corr(curComp)
             if abs(curCorr) > abs(bestCorr):
                 bestCorr = curCorr 
                 shift = j
-        if abs(bestCorr) > 0.9:
+        if abs(bestCorr) > 0.95:
             currentTotal += abs(bestCorr)
             changes.append((bestCorr, shift, i))
     return currentTotal, changes
